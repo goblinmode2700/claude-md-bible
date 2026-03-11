@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The CLAUDE.md Bible — Shipyard Press</title>
+<meta name="description" content="The definitive field manual for governing AI coding agents. 20 chapters of real patterns from production systems.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #060608;
+    --surface: #0c0c10;
+    --surface-raised: #12121a;
+    --border: #1a1a28;
+    --border-accent: #2a2a3f;
+    --text: #c8c8d4;
+    --text-dim: #6a6a7e;
+    --text-bright: #eeeef4;
+    --accent: #e8430a;
+    --accent-glow: rgba(232, 67, 10, 0.15);
+    --accent-dim: #b8350a;
+    --mono: 'DM Mono', 'SF Mono', 'Fira Code', monospace;
+    --serif: 'Instrument Serif', Georgia, serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── Noise texture overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── Grid background ── */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .grid-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, var(--accent-glow), transparent);
+  }
+
+  /* ── Layout ── */
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 120px 0 80px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-label {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.1s;
+  }
+
+  .hero-label::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(42px, 7vw, 72px);
+    font-weight: 400;
+    line-height: 1.05;
+    color: var(--text-bright);
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.2s;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    font-family: var(--serif);
+    font-size: clamp(22px, 3.5vw, 32px);
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text-dim);
+    line-height: 1.3;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.35s;
+  }
+
+  .hero-hook {
+    font-size: 15px;
+    color: var(--text);
+    max-width: 480px;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.45s;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.55s;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .meta-value {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text-bright);
+    font-family: var(--serif);
+  }
+
+  .meta-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  /* ── CTA Button ── */
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 36px;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.65s;
+  }
+
+  .cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .cta:hover {
+    background: var(--accent-dim);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px var(--accent-glow);
+  }
+
+  .cta:hover::before { opacity: 1; }
+
+  .cta-arrow {
+    transition: transform 0.2s;
+  }
+
+  .cta:hover .cta-arrow {
+    transform: translateX(3px);
+  }
+
+  .cta-secondary {
+    display: inline-block;
+    margin-left: 20px;
+    font-size: 13px;
+    color: var(--text-dim);
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.7s;
+  }
+
+  /* ── Sections ── */
+  section {
+    padding: 80px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 16px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  section h2 {
+    font-family: var(--serif);
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 400;
+    color: var(--text-bright);
+    line-height: 1.2;
+    margin-bottom: 32px;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .toc-part {
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 48px 1fr auto;
+    align-items: start;
+    gap: 16px;
+    transition: all 0.15s ease;
+  }
+
+  .toc-part:first-child { border-radius: 4px 4px 0 0; }
+  .toc-part:last-child { border-radius: 0 0 4px 4px; }
+
+  .toc-part:hover {
+    background: var(--surface-raised);
+    border-color: var(--border-accent);
+  }
+
+  .toc-num {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    padding-top: 2px;
+  }
+
+  .toc-title {
+    color: var(--text-bright);
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .toc-desc {
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .toc-chapters {
+    font-size: 12px;
+    color: var(--text-dim);
+    padding-top: 2px;
+    white-space: nowrap;
+  }
+
+  /* ── Stat callout ── */
+  .stat-callout {
+    margin: 48px 0;
+    padding: 32px;
+    border-left: 2px solid var(--accent);
+    background: linear-gradient(135deg, var(--accent-glow), transparent);
+  }
+
+  .stat-callout p {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-style: italic;
+    color: var(--text-bright);
+    line-height: 1.5;
+  }
+
+  /* ── Audience ── */
+  .audience-grid {
+    display: grid;
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .audience-item {
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .audience-marker {
+    width: 6px;
+    height: 6px;
+    min-width: 6px;
+    background: var(--accent);
+    margin-top: 8px;
+  }
+
+  .audience-item p {
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  .audience-item strong {
+    color: var(--text-bright);
+    font-weight: 500;
+  }
+
+  /* ── Anti-section ── */
+  .not-for {
+    margin-top: 32px;
+    padding: 24px;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+  }
+
+  .not-for-title {
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .not-for p {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* ── Sample ── */
+  .sample-block {
+    margin-top: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .sample-header {
+    padding: 12px 20px;
+    background: var(--surface-raised);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sample-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .sample-content {
+    padding: 24px 20px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  .sample-content .comment { color: var(--text-dim); }
+  .sample-content .keyword { color: var(--accent); }
+  .sample-content .string { color: #6abf8a; }
+
+  /* ── Final CTA ── */
+  .final-cta {
+    padding: 100px 0;
+    text-align: center;
+    border-bottom: none;
+  }
+
+  .final-cta h2 {
+    margin-bottom: 16px;
+  }
+
+  .final-cta p {
+    color: var(--text-dim);
+    margin-bottom: 40px;
+    max-width: 440px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .final-cta .cta {
+    opacity: 1;
+    animation: none;
+  }
+
+  .price-tag {
+    display: block;
+    font-family: var(--serif);
+    font-size: 48px;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+  }
+
+  .price-note {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 32px;
+  }
+
+  /* ── Footer ── */
+  footer {
+    padding: 40px 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  footer span {
+    color: var(--accent);
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ── Scroll animations ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .hero { padding: 80px 0 60px; }
+    .hero-meta { gap: 24px; }
+    .toc-part { grid-template-columns: 1fr; gap: 8px; }
+    .toc-num { display: none; }
+    .toc-chapters { display: none; }
+    section { padding: 60px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<div class="container">
+
+  <!-- ── Hero ── -->
+  <header class="hero">
+    <div class="hero-label">Shipyard Press</div>
+    <h1>The CLAUDE.md <em>Bible</em></h1>
+    <div class="hero-sub">How to Actually Ship with AI Agents</div>
+    <p class="hero-hook">Real patterns extracted from production systems. Not theory. Not vibes. The governance files that ship software while you sleep.</p>
+    <div class="hero-meta">
+      <div class="meta-item">
+        <span class="meta-value">20</span>
+        <span class="meta-label">Chapters</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-value">6</span>
+        <span class="meta-label">Codebases</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-value">15</span>
+        <span class="meta-label">Source Files</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-value">$39</span>
+        <span class="meta-label">One-time</span>
+      </div>
+    </div>
+    <a href="https://buy.stripe.com/4gMeVe3D7a0h2oC4Xydwc00" class="cta">
+      Get the field manual <span class="cta-arrow">&rarr;</span>
+    </a>
+  </header>
+
+  <!-- ── What's Inside ── -->
+  <section class="reveal">
+    <div class="section-label">Contents</div>
+    <h2>Six parts. Zero filler.</h2>
+
+    <div class="toc">
+      <div class="toc-part">
+        <span class="toc-num">I</span>
+        <div>
+          <div class="toc-title">Foundations</div>
+          <div class="toc-desc">What CLAUDE.md actually is. Why prompting fails for real projects. The hierarchy of persistent context.</div>
+        </div>
+        <span class="toc-chapters">Ch 1&ndash;2</span>
+      </div>
+      <div class="toc-part">
+        <span class="toc-num">II</span>
+        <div>
+          <div class="toc-title">The Patterns</div>
+          <div class="toc-desc">Session modes. Stop conditions. Code standards AI actually follows. ADRs. Testing contracts. Git conventions.</div>
+        </div>
+        <span class="toc-chapters">Ch 3&ndash;8</span>
+      </div>
+      <div class="toc-part">
+        <span class="toc-num">III</span>
+        <div>
+          <div class="toc-title">Advanced Patterns</div>
+          <div class="toc-desc">Sprint protocols. HANDOFF continuity. Performance discipline. The seven failure modes of AI-generated code. Proactive stewardship.</div>
+        </div>
+        <span class="toc-chapters">Ch 9&ndash;13</span>
+      </div>
+      <div class="toc-part">
+        <span class="toc-num">IV</span>
+        <div>
+          <div class="toc-title">Agents &amp; Automation</div>
+          <div class="toc-desc">Custom agent definitions. Automated hooks for quality gates. The autonomous loop pattern.</div>
+        </div>
+        <span class="toc-chapters">Ch 14&ndash;16</span>
+      </div>
+      <div class="toc-part">
+        <span class="toc-num">V</span>
+        <div>
+          <div class="toc-title">Design Systems</div>
+          <div class="toc-desc">UI governance for AI. The 5-Second Question. Hard constraints that prevent design drift.</div>
+        </div>
+        <span class="toc-chapters">Ch 17</span>
+      </div>
+      <div class="toc-part">
+        <span class="toc-num">VI</span>
+        <div>
+          <div class="toc-title">Putting It Together</div>
+          <div class="toc-desc">CLAUDE.md for every project stage. The evolution path. Nine copy-paste templates.</div>
+        </div>
+        <span class="toc-chapters">Ch 18&ndash;20</span>
+      </div>
+      <div class="toc-part">
+        <span class="toc-num">&plus;</span>
+        <div>
+          <div class="toc-title">Appendices</div>
+          <div class="toc-desc">Complete pattern catalog with dependency graph. Seven high-level thinking patterns AI systematically misses.</div>
+        </div>
+        <span class="toc-chapters">A &amp; B</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Stat ── -->
+  <div class="stat-callout reveal">
+    <p>Extracted from 15 real governance files across 6 production codebases &mdash; including a B2B SaaS platform, a job automation system, and an autonomous revenue agent.</p>
+  </div>
+
+  <!-- ── Sample ── -->
+  <section class="reveal">
+    <div class="section-label">Sample Pattern</div>
+    <h2>Session modes prevent mode confusion</h2>
+    <p style="margin-bottom: 24px; color: var(--text-dim);">The single most impactful pattern. AI mixes feature work with refactoring with testing, producing muddled commits. Session modes fix this.</p>
+
+    <div class="sample-block">
+      <div class="sample-header"><div class="sample-dot"></div> CLAUDE.md</div>
+      <div class="sample-content">
+<span class="comment">## Session Modes</span>
+<br><br>
+<span class="comment"># Every session operates in exactly one mode.</span>
+<br>
+<span class="comment"># If no mode is stated, ask before proceeding.</span>
+<br><br>
+| Mode | Tag | Purpose |
+<br>
+|---|---|---|
+<br>
+| <span class="keyword">[WRITE]</span> | Implement features per the current story |
+<br>
+| <span class="keyword">[REFACTOR]</span> | Improve structure &mdash; no new features |
+<br>
+| <span class="keyword">[TEST]</span> | Write or fix tests only &mdash; no feature code |
+<br>
+| <span class="keyword">[DOCUMENT]</span> | Update docs, specs, ADRs &mdash; no code |
+<br><br>
+<span class="string">Rule: After every 2-3 [WRITE] sessions,</span>
+<br>
+<span class="string">a [REFACTOR] session is mandatory.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Who This Is For ── -->
+  <section class="reveal">
+    <div class="section-label">Audience</div>
+    <h2>Built for people who ship</h2>
+
+    <div class="audience-grid">
+      <div class="audience-item">
+        <div class="audience-marker"></div>
+        <p><strong>You use Claude Code, Cursor, Copilot, or Codex</strong> and you've felt the gap between "AI can write code" and "AI can ship software."</p>
+      </div>
+      <div class="audience-item">
+        <div class="audience-marker"></div>
+        <p><strong>You've wasted sessions</strong> where the AI refactored when it should have been building, or broke three things fixing one.</p>
+      </div>
+      <div class="audience-item">
+        <div class="audience-marker"></div>
+        <p><strong>You want production patterns</strong> from someone who has shipped real software with AI agents &mdash; not Twitter threads repackaged as a course.</p>
+      </div>
+      <div class="audience-item">
+        <div class="audience-marker"></div>
+        <p><strong>You want copy-paste templates</strong> you can drop into your project today and immediately improve your AI agent's output.</p>
+      </div>
+    </div>
+
+    <div class="not-for">
+      <div class="not-for-title">Not for</div>
+      <p>People who want a beginner's guide to AI tools. This assumes you already use AI coding agents and want to make them dramatically more effective.</p>
+    </div>
+  </section>
+
+  <!-- ── Final CTA ── -->
+  <section class="final-cta reveal">
+    <div class="section-label" style="justify-content: center;">Get it now</div>
+    <h2>Stop vibe-coding. Start shipping.</h2>
+    <span class="price-tag">$39</span>
+    <div class="price-note">One-time purchase. Instant delivery. All future updates included.</div>
+    <a href="https://buy.stripe.com/4gMeVe3D7a0h2oC4Xydwc00" class="cta">
+      Get the field manual <span class="cta-arrow">&rarr;</span>
+    </a>
+  </section>
+
+</div>
+
+<footer>
+  <div class="container">
+    <span>Shipyard Press</span> &mdash; Field manuals for builders.
+  </div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
